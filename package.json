@@ -1,0 +1,26 @@
+{
+  "name": "phonebook-backend",
+  "version": "1.0.0",
+  "description": "exercise part 3 - fullstackopen course",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tryncha/fullstackopen-part3.git"
+  },
+  "author": "Tryncha",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Tryncha/fullstackopen-part3/issues"
+  },
+  "homepage": "https://github.com/Tryncha/fullstackopen-part3#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "morgan": "^1.10.0"
+  }
+}
