@@ -1,6 +1,9 @@
+require('dotenv').config();
+
 const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
+const Person = require('./models/person.js');
 
 const app = express();
 
@@ -12,88 +15,110 @@ morgan.token('res-data', (req, res) => {
   return JSON.stringify(req.body);
 });
 
-app.use(morgan('tiny'));
+// app.use(morgan('tiny'));
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :res-data'));
 
-let persons = [
-  {
-    id: '1',
-    name: 'Arto Hellas',
-    number: '040-123456'
-  },
-  {
-    id: '2',
-    name: 'Ada Lovelace',
-    number: '39-44-5323523'
-  },
-  {
-    id: '3',
-    name: 'Dan Abramov',
-    number: '12-43-234345'
-  },
-  {
-    id: '4',
-    name: 'Mary Poppendieck',
-    number: '39-23-6423122'
-  }
-];
+function errorHandler(err, req, res, next) {
+  console.log(err.message);
 
-app.get('/api/persons', (req, res) => {
-  res.json(persons);
+  if (err.name === 'CastError') {
+    return res.status(400).send({ error: 'Malformed id' });
+  } else if (err.name === 'ValidationError') {
+    return res.status(400).json({ error: err.message });
+  }
+
+  next(err);
+}
+
+app.use(errorHandler);
+
+// let people = [
+//   {
+//     id: '1',
+//     name: 'Arto Hellas',
+//     number: '040-123456'
+//   },
+//   {
+//     id: '2',
+//     name: 'Ada Lovelace',
+//     number: '39-44-5323523'
+//   },
+//   {
+//     id: '3',
+//     name: 'Dan Abramov',
+//     number: '12-43-234345'
+//   },
+//   {
+//     id: '4',
+//     name: 'Mary Poppendieck',
+//     number: '39-23-6423122'
+//   }
+// ];
+
+app.get('/api/people', (req, res) => {
+  Person.find({}).then((people) => {
+    res.json(people);
+  });
 });
 
 app.get('/info', (req, res) => {
-  const textHTML = `
-  <p>Phonebook has info for ${persons.length} ${persons.length === 1 ? 'person' : 'people'}</p>
-  <p>${new Date()}</p>`;
+  Person.find({}).then((people) => {
+    const textHTML = `
+    <p>Phonebook has info for ${people.length} ${people.length === 1 ? 'person' : 'people'}</p>
+    <p>${new Date()}</p>`;
 
-  res.end(textHTML);
+    res.end(textHTML);
+  });
 });
 
-app.get('/api/persons/:id', (req, res) => {
-  const id = req.params.id;
-  const person = persons.find((person) => person.id === id);
-
-  if (person) {
-    res.json(person);
-  } else {
-    res.status(404).end();
-  }
+app.get('/api/people/:id', (req, res, next) => {
+  Person.findById(req.params.id)
+    .then((person) => {
+      if (person) {
+        res.json(person);
+      } else {
+        res.status(404).end();
+      }
+    })
+    .catch((err) => next(err));
 });
 
-app.post('/api/persons', (req, res) => {
+app.post('/api/people', (req, res, next) => {
   const body = req.body;
 
-  if (persons.some((person) => person.name === body.name)) {
-    return res.status(400).json({ error: 'Name must be unique!' });
-  }
-
-  if (!body.name) {
-    return res.status(400).json({ error: 'Missing name!' });
-  }
-
-  if (!body.number) {
-    return res.status(400).json({ error: 'Missing number!' });
-  }
-
-  const person = {
-    id: String(Math.floor(Math.random() * 1000)),
+  const person = new Person({
     name: body.name,
     number: body.number
-  };
+  });
 
-  persons = persons.concat(person);
-  res.json(person);
+  person
+    .save()
+    .then((savedPerson) => {
+      res.json(savedPerson);
+    })
+    .catch((err) => next(err));
 });
 
-app.delete('/api/persons/:id', (req, res) => {
-  const id = req.params.id;
-  persons = persons.filter((person) => person.id !== id);
+app.put('/api/people/:id', (req, res, next) => {
+  const { name, number } = req.body;
 
-  res.status(204).end();
+  Person.findByIdAndUpdate(req.params.id, { name, number }, { new: true, runValidators: true, context: 'query' })
+    .then((updatedPerson) => {
+      res.json(updatedPerson);
+    })
+    .catch((error) => next(error));
 });
 
-const PORT = process.env.PORT || 3001;
+app.delete('/api/people/:id', (req, res, next) => {
+  Person.findByIdAndDelete(req.params.id)
+    .then((result) => {
+      console.log(result);
+      res.status(204).end();
+    })
+    .catch((err) => next(err));
+});
+
+const PORT = process.env.PORT;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}...`);
 });

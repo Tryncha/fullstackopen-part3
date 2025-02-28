@@ -1,1 +1,4 @@
-DELETE http://localhost:3001/api/persons/3
+DELETE http://localhost:3001/api/people/3
+
+###
+DELETE http://localhost:3001/api/people/67c1da710807fc8ef7f3b459
